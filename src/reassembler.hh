@@ -2,15 +2,23 @@
 
 #include "byte_stream.hh"
 #include <cstdint>
-#include <deque>
 
 class Reassembler {
+private:
+    struct Segment {
+        bool eof;
+        uint64_t left;
+        uint64_t right;
+        std::string data;
+        bool operator<(const Segment &other) const {
+            return left < other.left;
+        }
+    };
+
 public:
     // Construct Reassembler to write into given ByteStream.
     explicit Reassembler(ByteStream &&output)
-    : output_(std::move(output)),
-      buffer_(capacity(), '\0'),
-      flags_(capacity(), false) {}
+    : output_(std::move(output)) {}
 
     /*
      * Insert a new substring to be reassembled into a ByteStream.
@@ -56,10 +64,6 @@ public:
 
 private:
     ByteStream output_; // the Reassembler writes to this ByteStream
-
-    std::deque<char> buffer_;
-    std::deque<bool> flags_;
-    bool eof_{};
-    uint64_t eof_index_{};
-    uint64_t unassembled_bytes_{};
+    std::vector<Segment> buffer_{};
+    uint64_t pending_size_{};
 };
