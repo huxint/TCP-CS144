@@ -19,9 +19,8 @@
  * 3) The RST (reset) flag. If set, the stream has suffered an error and the connection should be aborted.
  */
 
-struct TCPReceiverMessage
-{
-  std::optional<Wrap32> ackno {};
-  uint16_t window_size {};
-  bool RST {};
+struct TCPReceiverMessage {
+    std::optional<Wrap32> ackno{};
+    uint16_t window_size{};
+    bool RST{};
 };
