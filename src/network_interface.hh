@@ -60,14 +60,12 @@ public:
     // address). Will need to use [ARP](\ref rfc::rfc826) to look up the Ethernet destination address for the next
     // hop. Sending is accomplished by calling `transmit()` (a member variable) on the frame.
     void send_datagram(const InternetDatagram &dgram, const Address &next_hop);
-    void send_arp_request(const uint32_t target_ip, EthernetFrame &arp_request_frame);
 
     // Receives an Ethernet frame and responds appropriately.
     // If type is IPv4, pushes the datagram to the datagrams_in queue.
     // If type is ARP request, learn a mapping from the "sender" fields, and send an ARP reply.
     // If type is ARP reply, learn a mapping from the "sender" fields.
     void recv_frame(const EthernetFrame &frame);
-    void make_arp_response(const ARPMessage &message, EthernetFrame &response) const;
 
     // Called periodically when time elapses
     void tick(size_t ms_since_last_tick);
@@ -122,4 +120,6 @@ private:
     是一个可选的时间戳，表示在这个时间点之前不要再给这个 IP 发 ARP 请求
     */
     std::unordered_map<uint32_t, std::pair<std::queue<EthernetFrame>, std::optional<size_t>>> frame_queue_{};
+    void make_arp_response(const ARPMessage &message, EthernetFrame &response) const;
+    void send_arp_request(const uint32_t target_ip, EthernetFrame &arp_request_frame);
 };
