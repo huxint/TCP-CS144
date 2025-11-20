@@ -82,6 +82,7 @@ public:
         sender_.receive(msg.receiver);
 
         // Send reply if needed.
+        push(transmit);
         if (need_send_) {
             send(sender_.make_empty_message(), transmit);
         }
