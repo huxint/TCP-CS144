@@ -1,6 +1,6 @@
 #pragma once
 
-#include <optional>
+#include <memory>
 #include <queue>
 #include <unordered_map>
 
@@ -106,20 +106,18 @@ private:
     // 当前时间
     size_t current_time_{};
 
-    // 保存arp表
-    /**
-    key: ip 地址
-    value: first 是mac地址，second 是这个映射的过期时间戳=current_time_ + 30000
-    */
-    std::unordered_map<uint32_t, std::pair<EthernetAddress, size_t>> arp_table_{};
+    struct ARPEntry {
+        EthernetAddress ethernet_address;
+        size_t expires_at;
+    };
 
-    // 等待arp请求的信号量队列
-    /**
-    key: 目标ip
-    value:  first 是 一个队列，存准备发但还没 MAC 的以太网帧，second
-    是一个可选的时间戳，表示在这个时间点之前不要再给这个 IP 发 ARP 请求
-    */
-    std::unordered_map<uint32_t, std::pair<std::queue<EthernetFrame>, std::optional<size_t>>> frame_queue_{};
+    struct PendingFrames {
+        std::queue<EthernetFrame> frames{};
+        size_t expires_at{};
+    };
+
+    std::unordered_map<uint32_t, ARPEntry> arp_table_{};
+    std::unordered_map<uint32_t, PendingFrames> frame_queue_{};
     void make_arp_response(const ARPMessage &message, EthernetFrame &response) const;
-    void send_arp_request(const uint32_t target_ip, EthernetFrame &arp_request_frame);
+    void send_arp_request(uint32_t target_ip);
 };

@@ -8,8 +8,14 @@ Wrap32 Wrap32::wrap(uint64_t n, Wrap32 zero_point) {
 }
 
 uint64_t Wrap32::unwrap(Wrap32 zero_point, uint64_t checkpoint) const {
-    Wrap32 wrapcheck_point = wrap(checkpoint, zero_point);
-    int32_t diff = raw_value_ - wrapcheck_point.raw_value_;
-    int64_t res = checkpoint + diff;
-    return res >= 0 ? res : res + (1ULL << 32);
+    constexpr uint64_t modulus = uint64_t{1} << 32;
+    constexpr uint64_t half = modulus / 2;
+    const uint64_t offset = static_cast<uint32_t>(raw_value_ - zero_point.raw_value_);
+    uint64_t result = (checkpoint & ~(modulus - 1)) | offset;
+    if (result > checkpoint && result - checkpoint > half && result >= modulus) {
+        result -= modulus;
+    } else if (result < checkpoint && checkpoint - result > half && result <= UINT64_MAX - modulus) {
+        result += modulus;
+    }
+    return result;
 }

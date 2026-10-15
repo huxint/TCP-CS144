@@ -44,6 +44,7 @@ add_test_exec(reassembler_dup)
 add_test_exec(reassembler_holes)
 add_test_exec(reassembler_overlapping)
 add_test_exec(reassembler_win)
+add_test_exec(reassembler_stress_test)
 
 add_test_exec(wrapping_integers_cmp)
 add_test_exec(wrapping_integers_wrap)
@@ -70,6 +71,9 @@ add_test_exec(send_extra)
 add_test_exec(net_interface)
 
 add_test_exec(router)
+add_test_exec(protocol_regressions)
+add_test_exec(tcp_integration)
 
 add_speed_test(byte_stream_speed_test)
 add_speed_test(reassembler_speed_test)
+add_speed_test(reassembler_workload_speed_test)

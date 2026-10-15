@@ -32,19 +32,18 @@ void Router::route() {
                 data_queue.pop();
                 continue;
             }
-            data.header.ttl -= 1;
-            data.header.compute_checksum();
             uint32_t ip = data.header.dst;
-            optional<routing_item> best_match;
-            for (uint32_t i = 0; i < routing_table_.size(); i++) {
-                auto &item = routing_table_[i];
+            const routing_item *best_match = nullptr;
+            for (const auto &item : routing_table_) {
                 if (item.route_prefix_ == (ip & item.mask_)) {
-                    if (!best_match.has_value() || best_match->mask_ < item.mask_) {
-                        best_match = item;
+                    if (!best_match || best_match->mask_ < item.mask_) {
+                        best_match = &item;
                     }
                 }
             }
-            if (best_match.has_value()) {
+            if (best_match) {
+                data.header.ttl -= 1;
+                data.header.compute_checksum();
                 auto &next_interface = _interfaces.at(best_match->interface_num_);
                 if (best_match->next_hop_.has_value()) {
                     next_interface->send_datagram(data, best_match->next_hop_.value());

@@ -1,59 +1,55 @@
 #include "reassembler.hh"
-#include "byte_stream.hh"
+
 #include <algorithm>
-#include <cstdint>
 
 using namespace std;
 
 void Reassembler::insert(uint64_t first_index, string data, bool is_last_substring) {
-    uint64_t capacity = writer().available_capacity();
-    uint64_t bytes_pushed = writer().bytes_pushed();
-    uint64_t left = std::max(first_index, bytes_pushed);
-    uint64_t right = std::min(first_index + data.size(), bytes_pushed + capacity);
-    if (left > right) { // 相等的时候为空串，也能接受（可能标志了is_last_substring）
-        return;
+    auto &output = output_.writer();
+    const uint64_t next_index = output.bytes_pushed();
+    const uint64_t window_end = next_index + output.available_capacity();
+    const uint64_t substring_end = first_index + data.size();
+    if (is_last_substring && next_index <= substring_end && substring_end <= window_end) {
+        end_index_ = substring_end;
     }
 
-    Segment segment{.eof = is_last_substring && right == first_index + data.size(),
-                    .left = left,
-                    .right = right,
-                    .data = data.substr(left - first_index, right - left)};
-    pending_size_ += segment.data.size(); // 先全部加上
-
-    auto iterator = std::lower_bound(buffer_.begin(), buffer_.end(), segment);
-
-    auto merge = [&](Segment &lhs, const Segment &rhs) {
-        if (lhs.right < rhs.right) {
-            auto length = lhs.right - rhs.left;
-            lhs.data += rhs.data.substr(length); // 加上剩余的
-            lhs.eof |= rhs.eof;
-            lhs.right = rhs.right;
-            pending_size_ -= length;
-        } else {
-            pending_size_ -= rhs.data.size();
+    uint64_t begin = max(first_index, next_index);
+    uint64_t end = min(substring_end, window_end);
+    if (begin < end) {
+        auto it = buffer_.upper_bound(begin);
+        if (it != buffer_.begin()) {
+            const auto previous = std::prev(it);
+            begin = max(begin, previous->first + previous->second.size());
         }
-    };
 
-    for (auto it = iterator; it != buffer_.end() && segment.right >= it->left; it = buffer_.erase(it)) {
-        merge(segment, *it);
+        // Keep overlapping boundary fragments and replace fully covered ones.
+        while (it != buffer_.end() && it->first + it->second.size() <= end) {
+            pending_size_ -= it->second.size();
+            it = buffer_.erase(it);
+        }
+        if (it != buffer_.end()) {
+            end = min(end, it->first);
+        }
+
+        if (begin < end) {
+            string fragment = begin == first_index && end == substring_end
+                                  ? std::move(data)
+                                  : data.substr(begin - first_index, end - begin);
+            if (begin == next_index) {
+                output.push(std::move(fragment));
+            } else {
+                pending_size_ += fragment.size();
+                buffer_.emplace_hint(it, begin, std::move(fragment));
+            }
+        }
     }
 
-    if (iterator != buffer_.begin()) {
-        if (auto it = std::prev(iterator); it->right >= segment.left) {
-            merge(*it, segment);
-            return;
-        }
+    for (auto it = buffer_.begin(); it != buffer_.end() && it->first == output.bytes_pushed(); it = buffer_.erase(it)) {
+        pending_size_ -= it->second.size();
+        output.push(std::move(it->second));
     }
-
-    buffer_.insert(iterator, segment);
-
-    if (auto &head = buffer_.front(); head.left == bytes_pushed) {
-        output_.writer().push(head.data);
-        pending_size_ -= head.data.size();
-        if (head.eof) {
-            output_.writer().close();
-        }
-        buffer_.erase(buffer_.begin());
+    if (end_index_ == output.bytes_pushed()) {
+        output.close();
     }
 }
 

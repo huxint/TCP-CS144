@@ -1,7 +1,9 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <optional>
+#include <vector>
 
 #include "exception.hh"
 #include "network_interface.hh"
@@ -11,16 +13,16 @@
 class Router {
 private:
     struct routing_item {
-        uint32_t route_prefix_;
         uint32_t mask_;
+        uint32_t route_prefix_;
         std::optional<Address> next_hop_;
         size_t interface_num_;
         routing_item(const uint32_t route_prefix,
                      const uint8_t prefix_length,
                      const std::optional<Address> next_hop,
                      const size_t interface_num)
-        : route_prefix_(route_prefix),
-          mask_(prefix_length == 0 ? 0 : ~((1 << (32 - prefix_length)) - 1)),
+        : mask_(prefix_length == 0 ? 0 : ~uint32_t{0} << (32 - prefix_length)),
+          route_prefix_(route_prefix & mask_),
           next_hop_(next_hop),
           interface_num_(interface_num) {}
     };

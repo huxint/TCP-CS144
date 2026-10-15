@@ -49,6 +49,11 @@ public:
     }
 
 private:
+    struct OutstandingSegment {
+        TCPSenderMessage message;
+        uint64_t end_seqno;
+    };
+
     // Variables initialized in constructor
     ByteStream input_;
     Wrap32 isn_;
@@ -62,7 +67,7 @@ private:
     bool fin_{};
 
     // 定时器
-    uint64_t RTO_ms_{};                         // 重传超时时间
-    uint64_t timer_{};                          // 定时器，记录上次发送报文的时间
-    std::queue<TCPSenderMessage> retx_queue_{}; // 按发送顺序存放所有曾经发过、可能需要重传的报文段。
+    uint64_t RTO_ms_{};                          // 重传超时时间
+    uint64_t timer_{};                           // 有未确认报文时累计的等待时间
+    std::queue<OutstandingSegment> retx_queue_{}; // Only segments that have not been fully acknowledged.
 };

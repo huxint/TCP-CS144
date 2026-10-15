@@ -10,18 +10,15 @@ bool Writer::is_closed() const {
 }
 
 void Writer::push(string data) {
-    uint64_t bytes = std::min(available_capacity(), data.size());
-    if (bytes == 0) {
-        return;
+    const uint64_t bytes = std::min(available_capacity(), data.size());
+    if (bytes != 0) {
+        bytes_pushed_ += bytes;
+        bytes_buffer_ += bytes;
+        buffer_.emplace(bytes == data.size() ? std::move(data) : data.substr(0, bytes));
+        if (buffer_.size() == 1) {
+            remaining_front_bytes = bytes;
+        }
     }
-    bytes_pushed_ += bytes;
-    bytes_buffer_ += bytes;
-    data.resize(bytes); // 截断
-    buffer_.emplace(std::move(data));
-    if (buffer_.size() == 1) {
-        remaining_front_bytes = bytes;
-    }
-    return;
 }
 
 void Writer::close() {
@@ -59,7 +56,7 @@ void Reader::pop(uint64_t len) {
         if (len >= remaining_front_bytes) {
             len -= remaining_front_bytes;
             buffer_.pop();
-            remaining_front_bytes = buffer_.front().size();
+            remaining_front_bytes = buffer_.empty() ? 0 : buffer_.front().size();
         } else {
             remaining_front_bytes -= len;
             len = 0;

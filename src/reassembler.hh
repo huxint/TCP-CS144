@@ -2,19 +2,11 @@
 
 #include "byte_stream.hh"
 #include <cstdint>
+#include <map>
+#include <optional>
+#include <utility>
 
 class Reassembler {
-private:
-    struct Segment {
-        bool eof;
-        uint64_t left;
-        uint64_t right;
-        std::string data;
-        bool operator<(const Segment &other) const {
-            return left < other.left;
-        }
-    };
-
 public:
     // Construct Reassembler to write into given ByteStream.
     explicit Reassembler(ByteStream &&output)
@@ -25,7 +17,6 @@ public:
      *   `first_index`: the index of the first byte of the substring
      *   `data`: the substring itself
      *   `is_last_substring`: this substring represents the end of the stream
-     *   `output`: a mutable reference to the Writer
      *
      * The Reassembler's job is to reassemble the indexed substrings (possibly out-of-order
      * and possibly overlapping) back into the original ByteStream. As soon as the Reassembler
@@ -64,6 +55,9 @@ public:
 
 private:
     ByteStream output_; // the Reassembler writes to this ByteStream
-    std::vector<Segment> buffer_{};
+    // Disjoint fragments remain separate until they can be moved to the output.
+    std::map<uint64_t, std::string> buffer_{};
     uint64_t pending_size_{};
+    // Exclusive end of the stream; empty until an accepted EOF identifies it.
+    std::optional<uint64_t> end_index_{};
 };

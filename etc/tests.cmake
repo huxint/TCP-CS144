@@ -31,6 +31,7 @@ ttest(reassembler_dup)
 ttest(reassembler_holes)
 ttest(reassembler_overlapping)
 ttest(reassembler_win)
+ttest(reassembler_stress_test)
 
 ttest(wrapping_integers_cmp)
 ttest(wrapping_integers_wrap)
@@ -57,6 +58,8 @@ ttest(send_extra)
 ttest(net_interface)
 
 ttest(router)
+ttest(protocol_regressions)
+ttest(tcp_integration)
 
 add_custom_target (check0 COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure --stop-on-failure --timeout 12 -R 'webget|^byte_stream_')
 
@@ -90,3 +93,4 @@ set_tests_properties(${compile_name_opt} PROPERTIES FIXTURES_SETUP compile_opt)
 
 stest(byte_stream_speed_test)
 stest(reassembler_speed_test)
+stest(reassembler_workload_speed_test)

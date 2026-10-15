@@ -4,14 +4,14 @@
 #include "tcp_receiver_message.hh"
 #include "tcp_sender_message.hh"
 #include "wrapping_integers.hh"
+#include <optional>
+#include <utility>
 
 class TCPReceiver {
 public:
     // Construct with given Reassembler
     explicit TCPReceiver(Reassembler &&reassembler)
-    : reassembler_(std::move(reassembler)),
-      zero_point_(0),
-      ack_(std::nullopt) {}
+    : reassembler_(std::move(reassembler)) {}
 
     /*
      * The TCPReceiver receives TCPSenderMessages, inserting their payload into the Reassembler
@@ -38,6 +38,5 @@ public:
 
 private:
     Reassembler reassembler_;
-    Wrap32 zero_point_;
-    std::optional<Wrap32> ack_;
+    std::optional<Wrap32> isn_{};
 };
